@@ -106,7 +106,7 @@ class Term (BasicEntity):
         return self.aspect
 
 
-class Relationship (BasicRelationship):
+class EvidencedRelationship (BasicRelationship):
 
     def __init__(self, relation_id, relation_type):
         self.id = relation_id
@@ -130,7 +130,7 @@ class Relationship (BasicRelationship):
         return self.evidences
 
 
-class EntityAssociation (Relationship):
+class EntityAssociation (EvidencedRelationship):
     """
     General purpose association for entities
     """
@@ -170,7 +170,7 @@ class ActivityAssociation (EntityAssociation):
 
 class Context (BasicEntity):
 
-    def __init__(self, relationship : Relationship, term : Term):
+    def __init__(self, relationship : EvidencedRelationship, term : Term):
         self.type = EntityType.CONTEXT
         self.relationship = relationship
         self.term = term

@@ -138,11 +138,11 @@ class Activity (BasicEntity):
     def get_association(self):
         return self.association
 
-    def add_contextual_target(self, contextual_association : ContextualTarget):
-        self.contextual_targets[contextual_association.id] = contextual_association
+    def add_contextual_target(self, contextual_target : ContextualTarget):
+        self.contextual_targets[contextual_target.id] = contextual_target
 
-    def remove_contextual_target(self, contextual_association_id):
-        self.contextual_targets.pop(contextual_association_id)
+    def remove_contextual_target(self, contextual_target_id):
+        self.contextual_targets.pop(contextual_target_id)
 
     def get_contextual_targets(self):
         return self.contextual_targets

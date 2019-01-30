@@ -117,7 +117,6 @@ class Association:
         return self.term
 
 
-
 class ContextualTarget (BasicEntity):
 
     def __init__(self, relationship : Relationship, term : Term):
@@ -161,7 +160,7 @@ class GOCam (BasicEntity):
     def get_activity(self, activity_id):
         return self.graph.nodes(activity_id)
 
-    def create_activity(self, activity_id):
+    def add_activity(self, activity_id):
         if self.has_activity(activity_id):
             return False
         

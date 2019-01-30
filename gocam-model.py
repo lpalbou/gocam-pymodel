@@ -8,12 +8,39 @@ class EntityType(Enum):
     TERM = "term"
     GENE_PRODUCT = "gene_product"
     RELATIONSHIP = "relationship"
-    CONTEXTUAL_TARGET = "contextual_target"
+    CONTEXT = "context"
     ACTIVITY = "activity"
 
 
 
 class BasicEntity:
+    """
+    Basic Unit to describe any entity
+    """
+
+    def set_id(self, evidence_label):
+        self.id = evidence_label
+
+    def set_type(self, type):
+        self.type = type
+
+    def set_label(self, evidence_label):
+        self.label = evidence_label
+    
+    def get_id(self):
+        return self.id
+
+    def get_type(self):
+        return self.type
+
+    def get_label(self):
+        return self.label
+
+
+class BasicRelationship:
+    """
+    This is similar to BasicEntity but separated in order to let Entities and Relations evolve separately
+    """
 
     def set_id(self, evidence_label):
         self.id = evidence_label
@@ -79,7 +106,7 @@ class Term (BasicEntity):
         return self.aspect
 
 
-class Relationship (BasicEntity):
+class Relationship (BasicRelationship):
 
     def __init__(self, relation_id, relation_type):
         self.id = relation_id
@@ -99,28 +126,52 @@ class Relationship (BasicEntity):
     def remove_evidence(self, evidence_id):
         self.evidences.pop(evidence_id)
 
+    def get_evidences(self):
+        return self.evidences
 
-class Association:
 
-    def __init__(self, gene_product : GeneProduct, relationship : Relationship, term : Term):
-        self.gene_product = gene_product
-        self.relationship = relationship
-        self.term = term
+class EntityAssociation (Relationship):
+    """
+    General purpose association for entities
+    """
+
+    def __init__(self, subject : BasicEntity, relation_id, relation_type, object : BasicEntity):
+        super().__init__(relation_id, relation_type)
+        self.subject = subject
+        self.object = object
 
     def get_relationship(self):
-        return self.relationship
+        return self
+
+    def get_evidences(self):
+        return self.get_evidences()
+
+    def get_subject(self):
+        return self.subject    
+
+    def get_object(self):
+        return self.object
+
+
+class ActivityAssociation (EntityAssociation):
+    """
+    Wrapper class to really understand what we are getting / asking for
+    """
+
+    def __init__(self, gene_product : GeneProduct, relation_id, relation_type, term : Term):
+        super().__init__(gene_product, relation_id, relation_type, term)
 
     def get_gene_product(self):
-        return self.gene_product    
+        return self.get_subject()    
 
     def get_term(self):
-        return self.term
+        return self.get_object()
 
 
-class ContextualTarget (BasicEntity):
+class Context (BasicEntity):
 
     def __init__(self, relationship : Relationship, term : Term):
-        self.type = EntityType.CONTEXTUAL_TARGET
+        self.type = EntityType.CONTEXT
         self.relationship = relationship
         self.term = term
 
@@ -130,25 +181,25 @@ class Activity (BasicEntity):
     def __init__(self, activity_id):
         self.id = activity_id
         self.type = EntityType.ACTIVITY
-        self.contextual_targets = { }
+        self.contexts = { }
 
-    def set_association(self, association : Association):
-        self.association = association
+    def set_activity_association(self, activity_association : ActivityAssociation):
+        self.activity_association = activity_association
 
-    def get_association(self):
-        return self.association
+    def get_activity_association(self):
+        return self.activity_association
 
-    def add_contextual_target(self, contextual_target : ContextualTarget):
-        self.contextual_targets[contextual_target.id] = contextual_target
+    def add_context(self, context : Context):
+        self.contexts[context.id] = context
 
-    def remove_contextual_target(self, contextual_target_id):
-        self.contextual_targets.pop(contextual_target_id)
+    def remove_context(self, context_id):
+        self.contexts.pop(context_id)
 
-    def get_contextual_targets(self):
-        return self.contextual_targets
+    def get_contexts(self):
+        return self.contexts
 
 
-class GOCam (BasicEntity):
+class GOCam:
 
     def __init__(self, model_id):
         self.id = model_id        
@@ -196,6 +247,9 @@ class GOCamExport:
         pass
 
     def to_yaml(self):
+        pass
+
+    def to_ttl(self):
         pass
 
     

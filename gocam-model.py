@@ -19,10 +19,21 @@ class EntityType(Enum):
 
 
 class NamedEntity:
+    """
+    The (id, label) are to be used to define the entity itself, and only uuid should be used to define the instance of that class
+    For instance, the uuid could be a URI of a subject in the triple store
+    """
 
     def __init__(self, id, label):
+        self.uuid = None
         self.id = id
         self.label = label
+
+    def set_uuid(self, uuid):
+        self.uuid = uuid
+
+    def get_uuid(self):
+        return self.uuid
 
     def set_id(self, id):
         self.id = id
@@ -195,7 +206,7 @@ class Evidence (TypedNamedEntity):
         self.contributors[contributor.id] = contributor
         return True
     
-    def get_contributors(self) -> Contributor:
+    def get_contributors(self) -> [Contributor]:
         return self.contributors
 
     def set_date(self, date):
@@ -204,7 +215,7 @@ class Evidence (TypedNamedEntity):
     def get_date(self):
         return self.date
 
-    def same(self, evidence : evidence):
+    def same(self, evidence : evidence) -> bool:
         if not super().same(evidence):
             return False
         if len(self.contributors) != len(evidence.contributors):
@@ -245,7 +256,7 @@ class EvidencedRelationship (BasicRelationship):
     def get_evidences(self) -> [Evidence]:
         return self.evidences
 
-    def same(self, relation : EvidencedRelationship):
+    def same(self, relation : EvidencedRelationship) -> bool:
         if not super().same(relation):
             return False
         if len(self.evidences) != len(relation.evidences):
@@ -263,14 +274,14 @@ class TypedNamedEntityAssociation (EvidencedRelationship):
     """
 
     def __init__(self, subject : TypedNamedEntity, object : TypedNamedEntity, relation_id, relation_label : str):
-        super().__init__(relation_id, relation_type)
+        super().__init__(relation_id, relation_label)
         self.subject = subject
         self.object = object
 
-    def get_subject(self):
+    def get_subject(self) -> TypedNamedEntity:
         return self.subject
 
-    def get_object(self):
+    def get_object(self) -> TypedNamedEntity:
         return self.object
 
 
@@ -282,10 +293,10 @@ class ActivityAssociation (TypedNamedEntityAssociation):
     def __init__(self, activity : Term, gene_product : GeneProduct, relation_id, relation_label):
         super().__init__(activity, gene_product, relation_id, relation_label)
 
-    def get_activity(self):
+    def get_activity(self) -> Term:
         return self.subject
 
-    def get_gene_product(self):
+    def get_gene_product(self) -> GeneProduct:
         return self.object
         
 
@@ -306,6 +317,7 @@ class Context (Term):
 class Activity (Term):
     """
     An Activity is a Term that is of aspect Activity (MF)
+    The instances of Context terms MUST be created at the GO-CAM level. Only the LINKS are part of the Activities
     """
 
     def __init__(self, activity_id, activity_label):
@@ -319,33 +331,42 @@ class Activity (Term):
     def set_activity_association(self, activity_association : ActivityAssociation):
         self.activity_association = activity_association
 
-    def get_activity_association(self):
+    def get_activity_association(self) -> ActivityAssociation:
         return self.activity_association
 
-    def add_context(self, context : Context):
+    def has_context(self, context : Context) -> bool:
+        return context.id in self.contexts
+
+    def add_context(self, context : Context) -> bool:
+        if self.has_context(context):
+            return False
         self.contexts[context.id] = context
+        return True
 
-    def remove_context(self, context_id):
-        self.contexts.pop(context_id)
+    def remove_context(self, context : Context) -> bool:
+        if not self.has_context(context):
+            return False
+        self.contexts.pop(context.id)
+        return True
 
-    def has_context(self, context_id):
-        return context_id in self.contexts
-
-    def get_contexts(self):
-        return self.contexts
 
 
 class GOCam:
+    """
+    GO-CAM is currently the largest data wrapper. Both Activity and Context node instances must be created at this level.
+    The causal relationships between Activities are stored at this level but the links between any (Activity -> Context(s)) are stored at the Activity level.
+    """
 
     def __init__(self, model_id, model_title):
         self.id = model_id        
         self.title = model_title
         self.creation_date = None
         self.modified_date = None
-        self.contributors = { }
         self.graph = nx.MultiDiGraph(name=model_id)
+        self.contributors = { }
+        self.contexts = { }
 
-    def set_title(self, title):
+    def set_title(self, title : str):
         self.title = title
 
     def set_creation_date(self, date):
@@ -360,7 +381,7 @@ class GOCam:
     def add_contributor(self, contributor : Contributor):
         self.contributors[contributor.id] = contributor
 
-    def get_title(self):
+    def get_title(self) -> str:
         return self.title
 
     def get_creation_date(self):
@@ -372,42 +393,57 @@ class GOCam:
     def has_contributor(self, orcid) -> bool:
         return orcid in self.contributors
 
-    def get_contributors(self):
+    def get_contributors(self) -> [Contributor]:
         return self.contributors
 
-    def has_activity(self, activity_id):
+    def has_activity(self, activity_id) -> bool:
         return self.graph.has_node(activity_id)
 
     def get_activity(self, activity_id):
         return self.graph.nodes(activity_id)
 
-    def add_activity(self, activity : Activity):
+    def add_activity(self, activity : Activity) -> bool:
         if self.has_activity(activity.id):
             return False
         
         self.graph.add_node(activity.id, data = activity)
         return True
 
-    def remove_activity(self, activity_id):
+    def remove_activity(self, activity_id) -> bool:
         if not self.has_activity(activity_id):
             return False
         self.graph.remove_node(activity_id)
         return True
     
-    def has_causal_relationship(self, activity_id1, activity_id2, relation_type):
+    def has_causal_relationship(self, activity_id1, activity_id2, relation_type) -> bool:
         edges = self.graph.get_edge_data(activity_id1, activity_id2)
         for edge in edges:
             if edges[edge]['type'] == relation_type:
                 return True
         return False
 
-    def add_causal_relationship(self, activity_id1, activity_id2, relation_type):
+    def add_causal_relationship(self, activity_id1, activity_id2, relation_type) -> bool:
         if not self.has_activity(activity_id1) or not self.has_activity(activity_id2):
             return False
         self.graph.add_edge(activity_id1, activity_id2, **{ "type": relation_type })
+        return True
 
     def remove_causal_relationship(self):
         pass
+
+    def add_context(self, context : Context):
+        self.contexts[context.id] = context
+
+    def remove_context(self, context_id):
+        self.contexts.pop(context_id)
+
+    def has_context(self, context_id):
+        return context_id in self.contexts
+
+    def get_contexts(self):
+        return self.contexts        
+
+
 
 
 class GOCamHandler:

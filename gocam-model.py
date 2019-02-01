@@ -372,19 +372,19 @@ class Activity (Term):
     def get_activity_association(self) -> ActivityAssociation:
         return self.activity_association
 
-    def has_context_target(self, context_association : ContextTargetAssociation) -> bool:
-        return context_association.id in self.context_targets
+    def has_context_target(self, context_target : ContextTargetAssociation) -> bool:
+        return context_target.id in self.context_targets
 
-    def add_context_target(self, context_association : ContextTargetAssociation) -> bool:
-        if self.has_context_target(context_association):
+    def add_context_target(self, context_target : ContextTargetAssociation) -> bool:
+        if self.has_context_target(context_target):
             return False
-        self.context_targets[context_association.id] = context_association
+        self.context_targets[context_target.id] = context_target
         return True
 
-    def remove_context_target(self, context_association : ContextTargetAssociation) -> bool:
-        if not self.has_context_target(context_association):
+    def remove_context_target(self, context_target : ContextTargetAssociation) -> bool:
+        if not self.has_context_target(context_target):
             return False
-        self.context_targets.pop(context_association.id)
+        self.context_targets.pop(context_target.id)
         return True
 
     def get_context_targets(self) -> [ContextTargetAssociation]:

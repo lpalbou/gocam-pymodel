@@ -475,14 +475,17 @@ class GOCam:
         self.graph.remove_edge(activity_id1, activity_id2, key=relation_type)
         return True
 
+    def get_causal_relationships(self):
+        return self.graph.edges()
+
+    def has_context(self, context_id):
+        return context_id in self.contexts
+
     def add_context(self, context : Context):
         self.contexts[context.id] = context
 
     def remove_context(self, context_id):
         self.contexts.pop(context_id)
-
-    def has_context(self, context_id):
-        return context_id in self.contexts
 
     def get_contexts(self):
         return self.contexts        

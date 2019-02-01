@@ -308,16 +308,22 @@ class ActivityAssociation (TypedNamedEntityAssociation):
 
 class Context (Term):
     """
-    A Context is a Term that is not an Activity
+    A Context is a Term that is not an Activity AND where we also possibly store possible parents
     """
 
     def __init__(self, term : Term):
         super().__init__(term.id, term.label)
         self.type = EntityType.CONTEXT
+        self.parent = None
 
         if self.is_mf():
             raise Exception("Context Terms can not be an activity, you probably want to create an Activity ?")
 
+    def set_parent(self, context : Context):
+        self.parent = context
+
+    def get_parent(self) -> Context:
+        return self.parent
 
 
 class TypedNamedEntityTargetAssociation (EvidencedRelationship):

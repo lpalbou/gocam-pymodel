@@ -457,20 +457,23 @@ class GOCam:
         return True
     
     def has_causal_relationship(self, activity_id1, activity_id2, relation_type) -> bool:
-        edges = self.graph.get_edge_data(activity_id1, activity_id2)
+        edges = self.graph.edges(keys=True)
         for edge in edges:
-            if edges[edge]['type'] == relation_type:
+            if relation_type in edge:
                 return True
         return False
 
     def add_causal_relationship(self, activity_id1, activity_id2, relation_type) -> bool:
-        if not self.has_activity(activity_id1) or not self.has_activity(activity_id2):
+        if self.has_activity(activity_id1) or self.has_activity(activity_id2):
             return False
-        self.graph.add_edge(activity_id1, activity_id2, **{ "type": relation_type })
+        self.graph.add_edge(activity_id1, activity_id2, key=relation_type)
         return True
 
-    def remove_causal_relationship(self):
-        pass
+    def remove_causal_relationship(self, activity_id1, activity_id2, relation_type) -> bool:
+        if not self.has_activity(activity_id1) or not self.has_activity(activity_id2):
+            return False
+        self.graph.remove_edge(activity_id1, activity_id2, key=relation_type)
+        return True
 
     def add_context(self, context : Context):
         self.contexts[context.id] = context

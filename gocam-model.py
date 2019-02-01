@@ -239,9 +239,14 @@ class BasicRelationship (TypedNamedEntity):
 
 
 class EvidencedRelationship (BasicRelationship):
+    """
+    This defines a relationship between a subject and object and supported by 0+ evidences
+    """
 
-    def __init__(self, relation_id, relation_label : str):
+    def __init__(self, subject : TypedNamedEntity, object : TypedNamedEntity, relation_id, relation_label : str):
         super().__init__(relation_id, relation_label)
+        self.subject = subject
+        self.object = object
         self.evidences = { }
 
     def set_evidences(self, evidences : [Evidence]):
@@ -287,7 +292,7 @@ class TypedNamedEntityAssociation (EvidencedRelationship):
 
 class ActivityAssociation (TypedNamedEntityAssociation):
     """
-    Wrapper class to really understand what we are getting / asking for
+    Wrapper class to really understand what we are getting / asking for in an Activity Association (MF enabled by GPs)
     """
 
     def __init__(self, activity : Term, gene_product : GeneProduct, relation_id, relation_label):
@@ -314,6 +319,33 @@ class Context (Term):
             raise Exception("Context Terms can not be an activity, you probably want to create an Activity ?")
 
 
+
+class TypedNamedEntityTargetAssociation (EvidencedRelationship):
+    """
+    General purpose association for entities (we only keep the targets/objects, not the subject)
+    """
+
+    def __init__(self, object : TypedNamedEntity, relation_id, relation_label : str):
+        super().__init__(relation_id, relation_label)
+        self.object = object
+
+    def get_object(self) -> TypedNamedEntity:
+        return self.object
+
+
+class ContextTargetAssociation (TypedNamedEntityAssociation):
+    """
+    Specific Activity associations (e.g. part_of object or occurs_in object)
+    Wrapper class to really understand what we are getting / asking for in a Context Association (Activity part_of, occurs_in, etc)
+    """
+
+    def __init__(self, context : Context, relation_id, relation_label):
+        super().__init__(context, relation_id, relation_label)
+
+    def get_context(self) -> Context:
+        return self.object
+
+
 class Activity (Term):
     """
     An Activity is a Term that is of aspect Activity (MF)
@@ -323,7 +355,7 @@ class Activity (Term):
     def __init__(self, activity_id, activity_label):
         super().__init__(activity_id, activity_label)
         self.type = EntityType.ACTIVITY
-        self.contexts = { }
+        self.context_targets = { }
 
         if not self.is_mf():
             raise Exception("Activity Terms must be an activity, you probably want to create a Context ?")
@@ -334,20 +366,23 @@ class Activity (Term):
     def get_activity_association(self) -> ActivityAssociation:
         return self.activity_association
 
-    def has_context(self, context : Context) -> bool:
-        return context.id in self.contexts
+    def has_context(self, context_association : ContextTargetAssociation) -> bool:
+        return context_association.id in self.context_targets
 
-    def add_context(self, context : Context) -> bool:
-        if self.has_context(context):
+    def add_context(self, context_association : ContextTargetAssociation) -> bool:
+        if self.has_context(context_association):
             return False
-        self.contexts[context.id] = context
+        self.context_targets[context_association.id] = context_association
         return True
 
-    def remove_context(self, context : Context) -> bool:
-        if not self.has_context(context):
+    def remove_context(self, context_association : ContextTargetAssociation) -> bool:
+        if not self.has_context(context_association):
             return False
-        self.contexts.pop(context.id)
+        self.context_targets.pop(context_association.id)
         return True
+
+    def get_contexts(self) -> [ContextTargetAssociation]:
+        return self.context_targets
 
 
 
